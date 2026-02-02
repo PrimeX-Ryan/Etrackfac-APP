@@ -28,11 +28,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const router = useRouter();
 
     const checkAuth = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setLoading(false);
+            return;
+        }
         try {
             const response = await api.get('/api/user');
             setUser(response.data);
         } catch (error) {
             setUser(null);
+            localStorage.removeItem('token');
         } finally {
             setLoading(false);
         }
@@ -43,20 +49,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (credentials: any) => {
-        // Initialize CSRF protection
+        // Initialize CSRF protection (Still good practice but less critical for Token Auth)
         await api.get('/sanctum/csrf-cookie');
 
         const response = await api.post('/api/login', credentials);
         if (response.data.success) {
-            await checkAuth();
-            router.push('/faculty/dashboard'); // Default, will be redirected by role guard if needed
+            // Save token!
+            localStorage.setItem('token', response.data.token);
+            setUser(response.data.user); // Set user immediately from response
+            router.push('/faculty/dashboard');
         } else {
             throw new Error(response.data.message);
         }
     };
 
     const logout = async () => {
-        await api.post('/api/logout');
+        try {
+            await api.post('/api/logout');
+        } catch (e) { }
+        localStorage.removeItem('token');
         setUser(null);
         router.push('/login');
     };
