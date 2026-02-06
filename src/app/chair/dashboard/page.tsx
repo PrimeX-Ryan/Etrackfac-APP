@@ -76,7 +76,7 @@ export default function ChairDashboard() {
                                     <td data-label="Date Submitted">{new Date(sub.created_at).toLocaleDateString()}</td>
                                     <td data-label="File">
                                         <a
-                                            href={`http://localhost:8000/storage/${sub.file_path}`}
+                                            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/storage/${sub.file_path}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-muted"

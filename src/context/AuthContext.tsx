@@ -57,7 +57,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Save token!
             localStorage.setItem('token', response.data.token);
             setUser(response.data.user); // Set user immediately from response
-            router.push('/faculty/dashboard');
+
+            // Route based on user role
+            const userRole = response.data.user.roles?.[0]?.name;
+            switch (userRole) {
+                case 'admin':
+                    router.push('/admin/users');
+                    break;
+                case 'dean':
+                    router.push('/dean/reports');
+                    break;
+                case 'program_chair':
+                    router.push('/chair/dashboard');
+                    break;
+                case 'faculty':
+                default:
+                    router.push('/faculty/dashboard');
+                    break;
+            }
         } else {
             throw new Error(response.data.message);
         }
