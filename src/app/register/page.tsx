@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 
 export default function Register() {
     const router = useRouter();
@@ -43,6 +44,12 @@ export default function Register() {
         setError('');
 
         if (password !== passwordConfirmation) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Password Mismatch',
+                text: 'Passwords do not match',
+                confirmButtonColor: 'var(--primary)'
+            });
             setError('Passwords do not match');
             setLoading(false);
             return;
@@ -57,10 +64,25 @@ export default function Register() {
                 role,
                 department_id: departmentId
             });
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Registration Successful',
+                text: 'Your account has been created. Please wait for admin approval.',
+                confirmButtonColor: 'var(--primary)'
+            });
+
             // Redirect to login with success flag
             router.push('/login?success=true');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+            const message = err.response?.data?.message || 'Registration failed';
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: message,
+                confirmButtonColor: 'var(--primary)'
+            });
+            setError(message);
         } finally {
             setLoading(false);
         }

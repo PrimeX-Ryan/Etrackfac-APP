@@ -6,10 +6,16 @@ import Image from 'next/image';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const [showLogo, setShowLogo] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Start fade out after 4.5 seconds
+    // Show logo after circles fuse (2.5 seconds)
+    const logoTimer = setTimeout(() => {
+      setShowLogo(true);
+    }, 2500);
+
+    // Start fade out at 4.5 seconds
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
     }, 4500);
@@ -20,6 +26,7 @@ export default function SplashScreen() {
     }, 5000);
 
     return () => {
+      clearTimeout(logoTimer);
       clearTimeout(fadeTimer);
       clearTimeout(navigateTimer);
     };
@@ -34,97 +41,116 @@ export default function SplashScreen() {
       justifyContent: 'center',
       background: 'var(--background)',
       opacity: fadeOut ? 0 : 1,
-      transition: 'opacity 0.5s ease-out'
+      transition: 'opacity 0.5s ease-out',
+      overflow: 'hidden'
     }}>
       <style jsx>{`
-                @keyframes float {
-                    0% { transform: translateY(0px); }
-                    50% { transform: translateY(-15px); }
-                    100% { transform: translateY(0px); }
+                @keyframes orbitLeft {
+                    0% {
+                        transform: translateX(-350px) rotate(0deg);
+                        opacity: 0.4;
+                    }
+                    25% {
+                        transform: translateX(-100px) translateY(-150px) rotate(90deg);
+                        opacity: 0.5;
+                    }
+                    50% {
+                        transform: translateX(100px) translateY(-100px) rotate(180deg);
+                        opacity: 0.6;
+                    }
+                    75% {
+                        transform: translateX(50px) translateY(50px) rotate(270deg);
+                        opacity: 0.8;
+                    }
+                    100% {
+                        transform: translateX(0px) translateY(0px) rotate(360deg);
+                        opacity: 1;
+                    }
                 }
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.6; }
+                @keyframes orbitRight {
+                    0% {
+                        transform: translateX(350px) rotate(0deg);
+                        opacity: 0.4;
+                    }
+                    25% {
+                        transform: translateX(100px) translateY(150px) rotate(-90deg);
+                        opacity: 0.5;
+                    }
+                    50% {
+                        transform: translateX(-100px) translateY(100px) rotate(-180deg);
+                        opacity: 0.6;
+                    }
+                    75% {
+                        transform: translateX(-50px) translateY(-50px) rotate(-270deg);
+                        opacity: 0.8;
+                    }
+                    100% {
+                        transform: translateX(0px) translateY(0px) rotate(-360deg);
+                        opacity: 1;
+                    }
                 }
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
+                @keyframes logoReveal {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.5);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
                 }
-                .logo-container {
-                    animation: float 3s ease-in-out infinite;
-                }
-                .logo-image {
-                    filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4));
-                }
-                .loading-ring {
-                    width: 200px;
-                    height: 200px;
-                    border: 3px solid transparent;
-                    border-top: 3px solid var(--primary);
-                    border-radius: 50%;
+                .circle-left {
                     position: absolute;
-                    animation: spin 1.5s linear infinite;
-                }
-                .loading-ring-outer {
-                    width: 220px;
-                    height: 220px;
-                    border: 2px solid transparent;
-                    border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+                    width: 140px;
+                    height: 140px;
+                    background: #f59e0b;
                     border-radius: 50%;
-                    position: absolute;
-                    animation: spin 2s linear infinite reverse;
+                    animation: orbitLeft 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
                 }
-                .loading-text {
-                    animation: pulse 1.5s ease-in-out infinite;
+                .circle-right {
+                    position: absolute;
+                    width: 140px;
+                    height: 140px;
+                    background: #fbbf24;
+                    border-radius: 50%;
+                    animation: orbitRight 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                }
+                .logo-reveal {
+                    animation: logoReveal 0.5s ease-out forwards;
                 }
             `}</style>
 
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
-        <div className="loading-ring-outer"></div>
-        <div className="loading-ring"></div>
-        <div className="logo-container">
-          <Image
-            src="/Logo.png"
-            alt="eTrackFac Logo"
-            width={150}
-            height={150}
-            className="logo-image"
-            priority
-          />
-        </div>
-      </div>
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '350px',
+        height: '350px'
+      }}>
+        {/* Big flat yellow circles with opacity, smooth orbit, fuse to solid */}
+        {!showLogo && (
+          <>
+            <div className="circle-left"></div>
+            <div className="circle-right"></div>
+          </>
+        )}
 
-      <div style={{ textAlign: 'center' }}>
-        <h1 style={{
-          marginBottom: '0.5rem',
-          background: 'linear-gradient(to right, var(--primary), var(--secondary))',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontSize: '2rem',
-          fontWeight: 700
-        }}>
-          eTrackFac
-        </h1>
-        <p className="text-muted loading-text" style={{ marginBottom: '1rem' }}>
-          Faculty Document Tracking System
-        </p>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.5rem',
-          color: 'var(--text-muted)',
-          fontSize: '0.875rem'
-        }}>
-          <div style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--primary)',
-            animation: 'pulse 1s ease-in-out infinite'
-          }}></div>
-          Loading...
-        </div>
+        {/* Logo appears after circles fuse */}
+        {showLogo && (
+          <div className="logo-reveal">
+            <Image
+              src="/Logo.png"
+              alt="eTrackFac Logo"
+              width={280}
+              height={280}
+              priority
+              style={{
+                filter: 'drop-shadow(0 0 40px rgba(245, 158, 11, 0.6))'
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

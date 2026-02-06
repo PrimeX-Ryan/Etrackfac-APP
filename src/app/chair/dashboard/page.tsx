@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import Swal from 'sweetalert2';
 import { CheckCircle, XCircle, FileText, ExternalLink, MessageSquare } from 'lucide-react';
 
 interface Submission {
@@ -38,9 +39,22 @@ export default function ChairDashboard() {
         try {
             await api.post(`/api/reviews/${id}`, { status, remarks });
             setReviewModal(null);
+
+            await Swal.fire({
+                icon: 'success',
+                title: `Submission ${status}`,
+                timer: 1500,
+                showConfirmButton: false,
+                position: 'center'
+            });
+
             await fetchSubmissions();
         } catch (error) {
-            alert('Review failed');
+            Swal.fire({
+                icon: 'error',
+                title: 'Review Failed',
+                text: 'There was an error submitting your review.',
+            });
         }
     };
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import Swal from 'sweetalert2';
 import { Plus, Settings2, Trash2, X, Save, FileCheck } from 'lucide-react';
 
 interface Requirement {
@@ -94,13 +95,32 @@ export default function AdminRequirements() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this requirement?')) return;
+        const result = await Swal.fire({
+            title: 'Delete Requirement?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        });
 
-        try {
-            await api.delete(`/api/admin/requirements/${id}`);
-            fetchRequirements();
-        } catch (err: any) {
-            alert(err.response?.data?.message || 'Failed to delete requirement');
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/api/admin/requirements/${id}`);
+                Swal.fire(
+                    'Deleted!',
+                    'Requirement has been deleted.',
+                    'success'
+                );
+                fetchRequirements();
+            } catch (err: any) {
+                Swal.fire(
+                    'Error!',
+                    err.response?.data?.message || 'Failed to delete requirement',
+                    'error'
+                );
+            }
         }
     };
 

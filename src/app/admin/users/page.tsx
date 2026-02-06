@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { UserPlus, UserCheck, Shield, Trash2, Check, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 interface User {
     id: number;
@@ -35,19 +36,50 @@ export default function AdminUsers() {
     const handleApprove = async (id: number) => {
         try {
             await api.post(`/api/admin/users/${id}/approve`);
+            Swal.fire({
+                icon: 'success',
+                title: 'Approved!',
+                text: 'User has been approved successfully.',
+                timer: 1500,
+                showConfirmButton: false
+            });
             fetchUsers(); // Refresh list
         } catch (error) {
-            alert("Failed to approve user");
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to approve user',
+            });
         }
     };
 
     const handleReject = async (id: number) => {
-        if (!confirm('Are you sure you want to reject and remove this user?')) return;
-        try {
-            await api.delete(`/api/admin/users/${id}`);
-            fetchUsers();
-        } catch (error) {
-            alert("Failed to reject user");
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to reject and remove this user?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, reject!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/api/admin/users/${id}`);
+                Swal.fire(
+                    'Rejected!',
+                    'User has been removed.',
+                    'success'
+                );
+                fetchUsers();
+            } catch (error) {
+                Swal.fire(
+                    'Error!',
+                    'Failed to reject user.',
+                    'error'
+                );
+            }
         }
     }
 

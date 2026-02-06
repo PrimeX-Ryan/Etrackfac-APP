@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { LogIn, Mail, Lock, ShieldAlert } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -15,7 +16,20 @@ export default function LoginPage() {
         setError('');
         try {
             await login({ email, password });
+            await Swal.fire({
+                icon: 'success',
+                title: 'Signed in successfully',
+                timer: 1500,
+                showConfirmButton: false,
+                position: 'center'
+            });
         } catch (err: any) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Failed',
+                text: err.message || 'Invalid credentials',
+                confirmButtonColor: 'var(--primary)'
+            });
             setError(err.message || 'Login failed');
         }
     };

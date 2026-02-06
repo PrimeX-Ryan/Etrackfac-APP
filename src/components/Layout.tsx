@@ -131,9 +131,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
                     {/* Action Buttons (Profile, Logout, Pill style) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                        <button className="btn btn-primary btn-full" style={{ borderRadius: '9999px' }}>
+                        <Link href="/profile" className="btn btn-primary btn-full" style={{ borderRadius: '9999px', textDecoration: 'none', justifyContent: 'center' }}>
                             <User size={16} /> Profile
-                        </button>
+                        </Link>
                         <button onClick={logout} className="btn btn-secondary btn-full" style={{ borderRadius: '9999px', justifyContent: 'center' }}>
                             <LogOut size={16} /> Log out
                         </button>

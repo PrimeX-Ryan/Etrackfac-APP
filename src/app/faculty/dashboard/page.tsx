@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import Swal from 'sweetalert2';
 import { Upload, FileText, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 
 interface ChecklistItem {
@@ -43,8 +44,20 @@ export default function FacultyDashboard() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             await fetchChecklist();
+            Swal.fire({
+                title: 'Uploaded!',
+                text: 'Your document has been submitted successfully.',
+                icon: 'success',
+                confirmButtonColor: 'var(--primary)',
+                timer: 2000
+            });
         } catch (error) {
-            alert('Upload failed');
+            Swal.fire({
+                title: 'Upload Failed',
+                text: 'There was an error uploading your document. Please try again.',
+                icon: 'error',
+                confirmButtonColor: 'var(--primary)'
+            });
         } finally {
             setUploading(null);
         }
