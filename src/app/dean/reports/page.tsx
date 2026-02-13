@@ -14,21 +14,40 @@ interface ReportData {
 
 export default function DeanReports() {
     const [reports, setReports] = useState<ReportData[]>([]);
+    const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
+    const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                const response = await api.get('/api/reports');
-                setReports(response.data);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        fetchDepartments();
         fetchReports();
     }, []);
+
+    useEffect(() => {
+        fetchReports();
+    }, [selectedDepartment]);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await api.get('/api/departments');
+            setDepartments(res.data);
+        } catch (error) {
+            console.error("Failed to fetch departments");
+        }
+    };
+
+    const fetchReports = async () => {
+        setLoading(true);
+        try {
+            const params = selectedDepartment ? { department_id: selectedDepartment } : {};
+            const response = await api.get('/api/reports', { params });
+            setReports(response.data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (loading) return <div>Loading reports...</div>;
 
@@ -64,7 +83,17 @@ export default function DeanReports() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2>Departmental Compliance</h2>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary"><Filter size={16} /> Filter</button>
+                        <select
+                            value={selectedDepartment}
+                            onChange={(e) => setSelectedDepartment(e.target.value)}
+                            style={{ padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid var(--border)' }}
+                        >
+                            <option value="">All Departments</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
+                        </select>
+                        <button className="btn btn-secondary" onClick={fetchReports}><Filter size={16} /> Filter</button>
                         <button className="btn btn-primary"><Download size={16} /> Export PDF</button>
                     </div>
                 </div>

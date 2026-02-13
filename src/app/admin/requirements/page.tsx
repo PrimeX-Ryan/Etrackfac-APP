@@ -9,7 +9,8 @@ interface Requirement {
     id: number;
     name: string;
     description: string | null;
-    semester: string;
+    semester: { id: number; name: string } | null;
+    semester_id: number;
     is_required: boolean;
     submissions_count: number;
 }
@@ -17,19 +18,26 @@ interface Requirement {
 interface RequirementForm {
     name: string;
     description: string;
-    semester: string;
+    semester_id: string; // Use string for select value
     is_required: boolean;
+}
+
+interface Semester {
+    id: number;
+    name: string;
+    is_active: boolean;
 }
 
 export default function AdminRequirements() {
     const [requirements, setRequirements] = useState<Requirement[]>([]);
+    const [semesters, setSemesters] = useState<Semester[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [form, setForm] = useState<RequirementForm>({
         name: '',
         description: '',
-        semester: '2nd Semester 2025-2026',
+        semester_id: '',
         is_required: true
     });
     const [saving, setSaving] = useState(false);
@@ -46,16 +54,33 @@ export default function AdminRequirements() {
         }
     };
 
+    const fetchSemesters = async () => {
+        try {
+            const res = await api.get('/api/semesters');
+            setSemesters(res.data);
+            // potentially set default semester to active one
+            const active = res.data.find((s: Semester) => s.is_active);
+            if (active) {
+                setForm(prev => ({ ...prev, semester_id: active.id.toString() }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch semesters');
+        }
+    };
+
     useEffect(() => {
         fetchRequirements();
+        fetchSemesters();
     }, []);
 
     const openCreateModal = () => {
         setEditingId(null);
+        // Default to active semester if available
+        const active = semesters.find(s => s.is_active);
         setForm({
             name: '',
             description: '',
-            semester: '2nd Semester 2025-2026',
+            semester_id: active ? active.id.toString() : (semesters[0]?.id.toString() || ''),
             is_required: true
         });
         setError('');
@@ -67,7 +92,7 @@ export default function AdminRequirements() {
         setForm({
             name: req.name,
             description: req.description || '',
-            semester: req.semester,
+            semester_id: req.semester_id?.toString() || req.semester?.id.toString() || '',
             is_required: req.is_required
         });
         setError('');
@@ -107,19 +132,37 @@ export default function AdminRequirements() {
 
         if (result.isConfirmed) {
             try {
+                // If it has submissions, we need to ask for force delete or just force it if user confirmed "Yes, delete it!" 
+                // The backend requires 'force=true' query param if submissions exist.
+                // The updated backend returns 422 with 'requires_confirmation' if we try to delete without force.
+                // Let's first try normal delete.
                 await api.delete(`/api/admin/requirements/${id}`);
-                Swal.fire(
-                    'Deleted!',
-                    'Requirement has been deleted.',
-                    'success'
-                );
+                Swal.fire('Deleted!', 'Requirement has been deleted.', 'success');
                 fetchRequirements();
             } catch (err: any) {
-                Swal.fire(
-                    'Error!',
-                    err.response?.data?.message || 'Failed to delete requirement',
-                    'error'
-                );
+                // If backend requires confirmation (422)
+                if (err.response?.status === 422 && err.response?.data?.requires_confirmation) {
+                    const forceResult = await Swal.fire({
+                        title: 'Force Delete?',
+                        text: `This requirement has ${err.response.data.submission_count} submissions. Deleting it will remove ALL associated submissions. Are you sure?`,
+                        icon: 'error',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        confirmButtonText: 'Yes, FORCE DELETE'
+                    });
+
+                    if (forceResult.isConfirmed) {
+                        try {
+                            await api.delete(`/api/admin/requirements/${id}?force=true`);
+                            Swal.fire('Deleted!', 'Requirement and submissions deleted.', 'success');
+                            fetchRequirements();
+                        } catch (forceErr: any) {
+                            Swal.fire('Error!', 'Failed to force delete.', 'error');
+                        }
+                    }
+                } else {
+                    Swal.fire('Error!', err.response?.data?.message || 'Failed to delete requirement', 'error');
+                }
             }
         }
     };
@@ -158,7 +201,7 @@ export default function AdminRequirements() {
                                         {req.description || 'No description'}
                                     </p>
                                 </td>
-                                <td data-label="Semester">{req.semester}</td>
+                                <td data-label="Semester">{req.semester?.name || 'N/A'}</td>
                                 <td data-label="Compulsory">{req.is_required ? 'Yes' : 'No'}</td>
                                 <td data-label="Submissions">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -257,14 +300,17 @@ export default function AdminRequirements() {
                             <div className="input-group">
                                 <label>Semester *</label>
                                 <select
-                                    value={form.semester}
-                                    onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                                    value={form.semester_id}
+                                    onChange={(e) => setForm({ ...form, semester_id: e.target.value })}
                                     style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
+                                    required
                                 >
-                                    <option value="1st Semester 2025-2026">1st Semester 2025-2026</option>
-                                    <option value="2nd Semester 2025-2026">2nd Semester 2025-2026</option>
-                                    <option value="1st Semester 2026-2027">1st Semester 2026-2027</option>
-                                    <option value="Summer 2026">Summer 2026</option>
+                                    <option value="" disabled>Select Semester</option>
+                                    {semesters.map(sem => (
+                                        <option key={sem.id} value={sem.id}>
+                                            {sem.name} {sem.is_active ? '(Active)' : ''}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 

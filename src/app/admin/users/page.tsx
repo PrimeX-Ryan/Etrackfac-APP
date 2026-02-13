@@ -88,11 +88,17 @@ export default function AdminUsers() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Filter out empty department_id if role is admin
+            const payload: any = { ...formData };
+            if (payload.role === 'admin' && !payload.department_id) {
+                delete payload.department_id;
+            }
+
             if (isEditing && currentUser) {
-                await api.put(`/api/admin/users/${currentUser}`, formData);
+                await api.put(`/api/admin/users/${currentUser}`, payload);
                 Swal.fire({ icon: 'success', title: 'User Updated', timer: 1500, showConfirmButton: false });
             } else {
-                await api.post('/api/admin/users', formData);
+                await api.post('/api/admin/users', payload);
                 Swal.fire({ icon: 'success', title: 'User Created', timer: 1500, showConfirmButton: false });
             }
             setIsModalOpen(false);
@@ -137,6 +143,12 @@ export default function AdminUsers() {
         }
     }
 
+    const handleViewSubmissions = (userId: number) => {
+        // Navigate or open modal to view submissions
+        // For now, let's just show an alert or a simple placeholder
+        window.location.href = `/admin/users/${userId}/submissions`;
+    }
+
     if (loading) return <div>Loading users...</div>;
 
     return (
@@ -170,7 +182,7 @@ export default function AdminUsers() {
                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</p>
                                 </td>
                                 <td data-label="Role"><span className="badge badge-approved" style={{ textTransform: 'uppercase' }}>{user.roles[0]?.name || 'No Role'}</span></td>
-                                <td data-label="Department">{user.department?.name || 'N/A'}</td>
+                                <td data-label="Department">{user.department?.name || (user.roles[0]?.name === 'admin' ? 'ALL (Admin)' : 'N/A')}</td>
                                 <td data-label="Status">
                                     {user.status === 'pending' ? (
                                         <span className="badge badge-pending">PENDING</span>
@@ -191,6 +203,12 @@ export default function AdminUsers() {
                                         <button onClick={() => handleDelete(user.id)} className="btn btn-danger" title="Delete" style={{ backgroundColor: 'var(--error)', color: 'white' }}>
                                             <Trash2 size={16} />
                                         </button>
+                                        {/* Only show submissions for faculty or users who submit things */}
+                                        {(user.roles.some(r => r.name === 'faculty')) && (
+                                            <button onClick={() => handleViewSubmissions(user.id)} className="btn btn-secondary" title="View Submissions" style={{ marginLeft: '0.5rem' }}>
+                                                Docs
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -233,8 +251,12 @@ export default function AdminUsers() {
                                 </select>
                             </div>
                             <div className="input-group">
-                                <label>Department</label>
-                                <select value={formData.department_id} onChange={e => setFormData({ ...formData, department_id: e.target.value })}>
+                                <label>Department {formData.role === 'admin' && '(Optional)'}</label>
+                                <select
+                                    value={formData.department_id}
+                                    onChange={e => setFormData({ ...formData, department_id: e.target.value })}
+                                    required={formData.role !== 'admin'}
+                                >
                                     <option value="">Select Department</option>
                                     {departments.map(dept => (
                                         <option key={dept.id} value={dept.id}>{dept.name}</option>
