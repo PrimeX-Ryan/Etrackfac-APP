@@ -1,11 +1,54 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { User, Mail, Briefcase, Shield, Building2 } from 'lucide-react';
+import { User, Mail, Briefcase, Shield, Building2, Edit2, X, Save } from 'lucide-react';
+import api from '@/lib/api';
+import Swal from 'sweetalert2';
 
 export default function ProfilePage() {
-    const { user, loading } = useAuth();
+    const { user, loading, checkAuth } = useAuth();
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: ''
+    });
+
+    const openEditModal = () => {
+        if (user) {
+            setFormData({
+                name: user.name,
+                email: user.email,
+                password: '',
+                password_confirmation: ''
+            });
+            setIsEditing(true);
+        }
+    };
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.put('/api/user/profile', formData);
+            await checkAuth(); // Refresh user data
+            setIsEditing(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Profile Updated',
+                text: 'Your profile has been updated successfully.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } catch (error: any) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Update Failed',
+                text: error.response?.data?.message || 'An error occurred while updating your profile.'
+            });
+        }
+    };
 
     if (loading) return <div>Loading profile...</div>;
     if (!user) return <div>Please log in to view profile.</div>;
@@ -21,8 +64,18 @@ export default function ProfilePage() {
                 alignItems: 'center',
                 marginBottom: '2rem',
                 borderBottom: '1px solid var(--border)',
-                paddingBottom: '2rem'
+                paddingBottom: '2rem',
+                position: 'relative'
             }}>
+                <button
+                    onClick={openEditModal}
+                    className="btn btn-secondary"
+                    style={{ position: 'absolute', top: 0, right: 0, padding: '0.5rem', borderRadius: '50%' }}
+                    title="Edit Profile"
+                >
+                    <Edit2 size={18} />
+                </button>
+
                 <div style={{
                     width: 120,
                     height: 120,
@@ -78,6 +131,75 @@ export default function ProfilePage() {
                     <span className="badge badge-approved">Active</span>
                 </div>
             </div>
+
+            {isEditing && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '500px', margin: '1rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3>Edit Profile</h3>
+                            <button onClick={() => setIsEditing(false)}><X size={20} /></button>
+                        </div>
+
+                        <form onSubmit={handleUpdateProfile}>
+                            <div className="input-group">
+                                <label>Full Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>Email Address</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>New Password (Optional)</label>
+                                <input
+                                    type="password"
+                                    placeholder="Leave blank to keep current password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    placeholder="Confirm new password"
+                                    value={formData.password_confirmation}
+                                    onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button type="submit" className="btn btn-primary btn-full">
+                                    <Save size={18} /> Save Changes
+                                </button>
+                                <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-full">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
